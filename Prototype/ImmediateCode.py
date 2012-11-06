@@ -9,10 +9,7 @@ class ImmediateCode(object):
 
       # Variables
       # contains dicts with
-      # "type"        the type of the variable
-      #               0 : unsigned
-      #               1 : signed
-      # "bits"        the number of bits
+      # "typeInfo"    Infos about the Datatype, is a 'Datatype' object
       # "writtenBy"   list with ID's of the Instructions that write to this variable
       # "status"      is it a constant?
       #               0 : not written to jet
@@ -133,10 +130,10 @@ class ImmediateCode(object):
 
 
    # tries to allocate a new space for a variable
-   def allocateVariable(self):
+   def allocateVariable(self, DatatypeInfo):
       NewVar = {}
-      NewVar["type"] = 0
-      NewVar["bits"] = 32
+      
+      NewVar["typeInfo"] = DatatypeInfo
       NewVar["writtenBy"] = []
       NewVar["status"] = 0
       NewVar["constValue"] = 0

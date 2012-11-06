@@ -30,13 +30,6 @@ class Generator(object):
    def __init__(self):
       # type:
 
-      # OUTDATED
-      # newVar           allocates space for a new (scoped) variable
-      #                  name            the name of the variable
-      #                  dataType        the datatype of the variable
-      #                                  0    unsigned int (32 bit)
-      #                  bits            number of bits
-
       # while       begin of a while loop
       #             statement    statement of the header
       #             body         the body of the while loop (is a list)
@@ -113,7 +106,6 @@ class Generator(object):
       #                  name             is the name of the array
       #                  info             Typeinformation, is a 'Datatype' Object
 
-      # TODO< remove newVar from codebase
       # newVar2          allocates space for a new (scoped) variable
       #                  name             is the Variablename
       #                  info             Typeinformation, is a 'Datatype' Object
@@ -142,12 +134,21 @@ class Generator(object):
 
       # (examples/calc my sqrt)
 
+      Type1 = Datatype(Datatype.EnumBasetype.UNSIGNED)
+      Type1.Bits = 32
+
+      Type2 = Datatype(Datatype.EnumBasetype.UNSIGNED)
+      Type2.Bits = 32
+
+      Type3 = Datatype(Datatype.EnumBasetype.UNSIGNED)
+      Type3.Bits = 32
+
       self.Root = [
-         {"type":"newVar", "name":"Input", "dataType":0, "bits":32},
+         {"type":"newVar2", "name":"Input", "info":Type1},
          {"type":"assigment2", "left":{"type":"variable", "name":"Input"}, "right":{"type":"number", "value":29}},
-         {"type":"newVar", "name":"Counter", "dataType":0, "bits":32},
+         {"type":"newVar2", "name":"Counter", "info":Type2},
          {"type":"assigment2", "left":{"type":"variable", "name":"Counter"}, "right":{"type":"number", "value":0}},
-         {"type":"newVar", "name":"Old", "dataType":0, "bits":32},
+         {"type":"newVar2", "name":"Old", "info":Type3},
          {"type":"assigment2", "left":{"type":"variable", "name":"Old"}, "right":{"type":"number", "value":0}},
          
          {"type":"while", "statement":{"type":"true"}, "body":[
@@ -182,24 +183,24 @@ class Generator(object):
       """
 
       """
-      Type1 = Datatype(2) # fixedpoint Datatype
-      Type1.PrePointDigits = 6
-      Type1.PostPointDigits = 12
+      Type1 = Datatype(Datatype.EnumBasetype.FIXEDPOINT) # fixedpoint Datatype
+      Type1.PrePointBits = 6
+      Type1.PostPointBits = 12
       Type1.IsArray = True
       Type1.IsConst = True
       Type1.ArrayValues = [0.7853981633974483 , 0.4636476090008061, 0.24497866312686414, 0.12435499454676144, 0.06241880999595735, 0.031239833430268277, 0.015623728620476831]
 
-      Type2 = Datatype(2) # fixedpoint Datatype
-      Type2.PrePointDigits = 6
-      Type2.PostPointDigits = 12
+      Type2 = Datatype(Datatype.EnumBasetype.FIXEDPOINT) # fixedpoint Datatype
+      Type2.PrePointBits = 6
+      Type2.PostPointBits = 12
 
-      Type3 = Datatype(2) # fixedpoint Datatype
-      Type3.PrePointDigits = 6
-      Type3.PostPointDigits = 12
+      Type3 = Datatype(Datatype.EnumBasetype.FIXEDPOINT) # fixedpoint Datatype
+      Type3.PrePointBits = 6
+      Type3.PostPointBits = 12
 
-      Type4 = Datatype(2) # fixedpoint Datatype
-      Type4.PrePointDigits = 6
-      Type4.PostPointDigits = 12
+      Type4 = Datatype(Datatype.EnumBasetype.FIXEDPOINT) # fixedpoint Datatype
+      Type4.PrePointBits = 6
+      Type4.PostPointBits = 12
 
       self.Root = [
          {"type":"newConstArray", "name":"ATanTable", "info":Type1},
@@ -243,15 +244,28 @@ class Generator(object):
    # "IntoVariable"    is the Id of the variable the result must be written into
 
    # returns (Success State, Error Message)
-   def evaluateStatement(self, Statement, IntoVariable, VariableStack):
+   def evaluateStatement(self, Statement, IntoVariable, IntoDatatype, VariableStack):
       print(Statement["type"])
 
       if   Statement["type"] == "variable":
          # lookup the variable name
-         (Found, VariableId) = self.lookupVariable(VariableStack, Statement["name"])
+         (Found, VariableId, VariableDatatype) = self.lookupVariable(VariableStack, Statement["name"])
 
          if not Found:
             return (False, "Variable " + Statement["name"] + " was not declared!")
+
+         # check if the types and bits are equal
+         TypeCheckResult = VariableDatatype.compareType(IntoType)
+
+         if TypeCheckResult == Datatype.EnumTypeResult.DIFFERENTBITS:
+            return (False, "Variable " + Statement["name"] + " don't have matching number of bits!")
+         elif TypeCheckResult == Datatype.EnumTypeResult.DIFFERENTTYPE:
+            return (False, "Variable " + Statement["name"] + " is of wrong type!")
+         elif TypeCheckResult == Datatype.EnumTypeResult.EQUAL:
+            # all right
+            pass
+         else:
+            return (False, "Internal Error #42")
 
          self.ImmediateCodeObj.writeMov(IntoVariable, VariableId)
 
@@ -260,7 +274,7 @@ class Generator(object):
       elif Statement["type"] == "number":
          self.ImmediateCodeObj.writeConstAssigment(IntoVariable, Statement["value"])
          
-         return (True,0)
+         return (True, 0)
 
       elif (Statement["type"] == "div") or (Statement["type"] == "add") or (Statement["type"] == "mul") or (Statement["type"] == "div"):
          VarLeft = None
@@ -269,31 +283,47 @@ class Generator(object):
          # do a simple optimization
          # if it is a variable, we don't need to create a Temporary Variable, evaluate it and move it into it
          if Statement["left"]["type"] == "variable":
-            (Found, VarLeft) = self.lookupVariable(VariableStack, Statement["left"]["name"])
+            (Found, VarLeft, VarLeftDatatype) = self.lookupVariable(VariableStack, Statement["left"]["name"])
 
             if not Found:
                return (False, "Variable " + Statement["name"] + " was not declared!")
 
          else:
-            VarLeft = self.ImmediateCodeObj.allocateVariable()
+            VarLeft = self.ImmediateCodeObj.allocateVariable(IntoDatatype)
+            VarLeftDatatype = IntoDatatype
 
-            (CalleeSuccess, CalleeErrorMessage) = self.evaluateStatement(Statement["left"], VarLeft, VariableStack)
+            (CalleeSuccess, CalleeErrorMessage) = self.evaluateStatement(Statement["left"], VarLeft, VarLeftDatatype, VariableStack)
             if not CalleeSuccess:
                return (False, CalleeErrorMessage)
 
          # the same for the right side
          if Statement["right"]["type"] == "variable":
-            (Found, VarRight) = self.lookupVariable(VariableStack, Statement["right"]["name"])
+            (Found, VarRight, VarRightDatatype) = self.lookupVariable(VariableStack, Statement["right"]["name"])
 
             if not Found:
                return (False, "Variable " + Statement["name"] + " was not declared!")
 
          else:
-            VarRight = self.ImmediateCodeObj.allocateVariable()
+            VarRight = self.ImmediateCodeObj.allocateVariable(IntoDatatype)
+            VarRightDatatype = IntoDatatype
 
-            (CalleeSuccess, CalleeErrorMessage) = self.evaluateStatement(Statement["right"], VarRight, VariableStack)
+            (CalleeSuccess, CalleeErrorMessage) = self.evaluateStatement(Statement["right"], VarRight, VarRightDatatype, VariableStack)
             if not CalleeSuccess:
                return (False, CalleeErrorMessage)
+
+         # check if the types are equal
+         TypeCheckResult = VarLeftDatatype.compareType(VarRightDatatype)
+
+         if   TypeCheckResult == Datatype.EnumTypeResult.DIFFERENTBITS:
+            return (False, "Left and right variables don't have matching number of bits!")
+         elif TypeCheckResult == Datatype.EnumTypeResult.DIFFERENTTYPE:
+            return (False, "Left an right variables are of different type!")
+         elif TypeCheckResult == Datatype.EnumTypeResult.EQUAL:
+            # all right
+            pass
+         else:
+            return (False, "Internal Error #42")
+
 
          if Statement["type"] == "add":
             self.ImmediateCodeObj.writeAdd(VarLeft, VarRight, IntoVariable)
@@ -324,21 +354,26 @@ class Generator(object):
    #                each Element in the List is a dict with
    #                "name"   the name of the variable
    #                "id"     the id of the Variable
+   #                "info"   typeinfo as a 'Datatype' object
    def transformObjectsIntoCode(self, Objects, ScopeType, ReturnLabelId, VariableStack):
       VariableStack.append([])
 
       for Object in Objects:
          print(Object["type"])
 
-         if Object["type"] == "newVar":
-            # TODO< check if the variable was allready declared inside this scope >
+         if Object["type"] == "newVar2":
+            # check if the variable was allready declared inside this scope
+            for Variable in VariableStack[-1]:
+               if Variable["name"] == Object["name"]:
+                  return (False, "Variable '{0}' was allready defined in this scope!".format(Object["name"]))
 
-            VariableId = self.ImmediateCodeObj.allocateVariable()
+            VariableId = self.ImmediateCodeObj.allocateVariable(Object["info"])
 
             # store the variable in the variable stack
             NewVar = {}
             NewVar["name"] = Object["name"]
             NewVar["id"]   = VariableId
+            NewVar["info"] = Object["info"]
 
             VariableStack[-1].append(NewVar)
 
@@ -351,23 +386,19 @@ class Generator(object):
             # check if on the left is a Variable, if not, emit an error
             # TODO< here is the right place for a struct lookup for for example a C-expression like "blub.a = ..." or "ax->ab = ..." >
 
-            print("assigment2")
-            print("right:")
-            print(Object["right"])
-
             if Object["left"]["type"] != "variable":
                # emit an error
                return (False, "Internal Error #1 (TODO)")
 
             # do the variable lookup
-            (VariableFound, LeftVariableId) = self.lookupVariable(VariableStack, Object["left"]["name"])
+            (VariableFound, LeftVariableId, LeftVariableInfo) = self.lookupVariable(VariableStack, Object["left"]["name"])
 
             if not VariableFound:
                # emit syntax error
                return (False, "Variable " + Object["left"]["name"] + " was not declared!")
 
             # evaluate the right statement
-            (CalleeSuccess, CalleeMessage) = self.evaluateStatement(Object["right"], LeftVariableId, VariableStack)
+            (CalleeSuccess, CalleeMessage) = self.evaluateStatement(Object["right"], LeftVariableId, LeftVariableInfo, VariableStack)
 
             # check for errors of the function call
             if not CalleeSuccess:
@@ -382,21 +413,21 @@ class Generator(object):
                # emit an error
                return (False, "Internal Error #1 (TODO)")
 
-            (VariableFound, LeftVariableId) = self.lookupVariable(VariableStack, Object["left"]["name"])
+            (VariableFound, LeftVariableId, LeftVariableInfo) = self.lookupVariable(VariableStack, Object["left"]["name"])
 
             if not VariableFound:
                # emit syntax error
                return (False, "Variable " + Object["left"]["name"] + " was not declared!")
 
             # create a new temporary variable
-            TempVar = self.ImmediateCodeObj.allocateVariable()
+            TempVar = self.ImmediateCodeObj.allocateVariable(LeftVariableInfo)
 
-            Returned = self.evaluateStatement(Object["right"], TempVar, VariableStack)
+            (CalleeSuccess, CalleeMessage) = self.evaluateStatement(Object["right"], TempVar, LeftVariableInfo, VariableStack)
 
             # check for errors
-            if not Returned[0]:
+            if not CalleeSuccess:
                # TODO< return better error description >
-               return (False, "Syntax error")
+               return (False, CalleeMessage)
 
             self.ImmediateCodeObj.writeSub(LeftVariableId, TempVar, LeftVariableId)
 
@@ -427,15 +458,29 @@ class Generator(object):
                VariableNameLeft  = Object["statement"]["left"]["name"]
                VariableNameRight = Object["statement"]["right"]["name"]
 
-               (VariableFound, VariableIdLeft) = self.lookupVariable(VariableStack, VariableNameLeft)
+               (VariableFound, VariableIdLeft, VarLeftDatatype) = self.lookupVariable(VariableStack, VariableNameLeft)
 
                if not VariableFound:
                   return (False, "Variable " + VariableNameLeft + " was not declared!")
 
-               (VariableFound, VariableIdRight) = self.lookupVariable(VariableStack, VariableNameRight)
+               (VariableFound, VariableIdRight, VarRightDatatype) = self.lookupVariable(VariableStack, VariableNameRight)
 
                if not VariableFound:
                   return (False, "Variable " + VariableNameRight + " was not declared!")
+
+               # check if the types do match
+               TypeCheckResult = VarLeftDatatype.compareType(VarRightDatatype)
+
+               if   TypeCheckResult == Datatype.EnumTypeResult.DIFFERENTBITS:
+                  return (False, "Left and right variables don't have matching number of bits!")
+               elif TypeCheckResult == Datatype.EnumTypeResult.DIFFERENTTYPE:
+                  return (False, "Left an right variables are of different type!")
+               elif TypeCheckResult == Datatype.EnumTypeResult.EQUAL:
+                  # all right
+                  pass
+               else:
+                  return (False, "Internal Error #42")
+
 
                # write Immediate code
                LabelIdTrue  = self.ImmediateCodeObj.getNewLableIdentifier()
@@ -473,7 +518,7 @@ class Generator(object):
             if Object["statement"]["type"] != "variable":
                return (False, "postinc TODO")
 
-            (VariableFound, VariableId) = self.lookupVariable(VariableStack, Object["statement"]["name"])
+            (VariableFound, VariableId, VariableDatatype) = self.lookupVariable(VariableStack, Object["statement"]["name"])
 
             if not VariableFound:
                return (False, "Variable " + Object["statement"]["name"] + " was not declared!")
@@ -491,7 +536,6 @@ class Generator(object):
 
          else:
             # internal error
-            print(Object["type"])
 
             return (False, "Internal Error!")
 
@@ -504,12 +548,14 @@ class Generator(object):
       ActualStackIndex = len(VariableStack)-1
       Found = False
       VariableId = None
+      VariableInfo = None
 
       while True:
          for Variable in VariableStack[ActualStackIndex]:
             if Variable["name"] == VariableName:
                Found = True
                VariableId = Variable["id"]
+               VariableInfo = Variable["info"]
 
                break
 
@@ -521,7 +567,7 @@ class Generator(object):
 
          ActualStackIndex -= 1
 
-      return (Found, VariableId)
+      return (Found, VariableId, VariableInfo)
 
 Gen = Generator()
 Gen.doIt()

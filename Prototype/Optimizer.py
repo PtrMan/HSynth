@@ -9,6 +9,8 @@
     - detect *3 and so on
 """
 
+from Datatype import *
+
 class Optimizer(object):
    def __init__(self):
       self.ImmediateInstructions = None
@@ -120,8 +122,12 @@ class Optimizer(object):
       while i < len(self.ImmediateInstructions):
          if self.ImmediateInstructions[i].Type == 7: # if it is a multiplication
             if   self.Variables[ self.ImmediateInstructions[i].A ]["status"] == 1: # one time a const written to it
+
+               # if it gets multiplied by 2 the other operand is unsigned
                if (self.Variables[ self.ImmediateInstructions[i].A ]["constValue"] == 2) and \
-                  (self.Variables[ self.ImmediateInstructions[i].B ]["type"] == 0):          # if it gets multiplied by 2 the other operand is unsigned 
+                  (self.Variables[ self.ImmediateInstructions[i].B ]["typeInfo"].BaseType == Datatype.EnumBasetype.UNSIGNED): 
+                  
+                  # ...
                   # we replace the instruction with a shift instruction
 
                   Source      = self.ImmediateInstructions[i].B
@@ -133,8 +139,10 @@ class Optimizer(object):
                   self.ImmediateInstructions[i].Bits        = 1
 
             elif self.Variables[ self.ImmediateInstructions[i].B ]["status"] == 1: # one time a const written to it
+
+               # if it gets multiplied by 2 the other operand is unsigned 
                if (self.Variables[ self.ImmediateInstructions[i].B ]["constValue"] == 2) and \
-                  (self.Variables[ self.ImmediateInstructions[i].A ]["type"] == 0):          # if it gets multiplied by 2 the other operand is unsigned 
+                  (self.Variables[ self.ImmediateInstructions[i].A ]["typeInfo"].BaseType == Datatype.EnumBasetype.UNSIGNED):
                   # we replace the instruction with a shift instruction
 
                   Source      = self.ImmediateInstructions[i].A
@@ -180,6 +188,8 @@ class Optimizer(object):
          i += 1
 
    # this fuses additions and increments
+
+   # TODO< check types of the Variables >
    def _fuseAdditionAndIncrement(self):
       i = 0
 
