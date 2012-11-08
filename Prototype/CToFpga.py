@@ -18,7 +18,7 @@ while(1)
 }
 """
 
-
+import argparse
 
 from ImmediateCode import *
 
@@ -26,8 +26,82 @@ from Optimizer import *
 
 from Datatype import *
 
-class Generator(object):
+class CToFpga(object):
    def __init__(self):
+      pass
+
+   def go(self):
+      ArgumentParser = argparse.ArgumentParser(description = "HSynth HLS C to VHDL compiler")
+
+      ArgumentParser.add_argument("--parallel", action="store_true", help="Generate a parallel Design (see more in help)")
+      ArgumentParser.add_argument("--serial", action="store_true", help="Generate a serial Design (see more in help)")
+
+
+      ArgumentObject = ArgumentParser.parse_args()
+
+      Parallel = ArgumentObject.parallel
+      Serial   = ArgumentObject.serial
+
+      Allright = False
+
+      if (not Parallel) and (not Serial):
+         print("Error: Either the --serial or --parallel switches are required!")
+      elif (not Parallel) != Serial:
+         print("Error: the Parallel and Serial Arguments are mutal exclusive!")
+      else:
+         Allright = True
+
+      if not Allright:
+         return
+
+      ArchitectureType = None
+
+      if Parallel:
+         ArchitectureType = Generator.EnumArchitetureType.PARALLEL
+      else:
+         ArchitectureType = Generator.EnumArchitetureType.SERIAL
+
+      Gen = Generator()
+      Gen.doIt(ArchitectureType)
+
+class Architecture(object):
+   def __init__(self):
+      self.ImmediateCodeOptimized = []
+
+   # returns a (Success boolean, string error message)
+   def generateParallelDesign(self):
+      if self._notParallelisizableInstructions():
+         return (False, "Immediate Instructions contain a not parallelisizable Instruction")
+
+      # TODOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
+
+      return (True, None)
+
+   # returns bool that indicates if some instructions of the design are not parallelisizable
+   # True  if at least one not parallelisizable Instruction was found
+   # Flase if not
+   def _notParallelisizableInstructions(self):
+      for Instruction in self.ImmediateCodeOptimized:
+         if (Instruction.Type == ImmediateInstruction.EnumType.GOTOLABEL) or \
+            (Instruction.Type == ImmediateInstruction.EnumType.IF):
+
+            # ...
+            return True
+
+      return False
+
+class Generator(object):
+   class EnumArchitetureType:
+      PARALLEL = 0
+      SERIAL   = 1
+
+   def __init__(self):
+      self.ImmediateCode          = [] # unoptimized immediate code
+      self.ImmediateCodeOptimized = [] # optimized immediate code
+      self.Variables              = []
+
+      self.ArchOutput = ArchitectureType()
+
       # type:
 
       # while       begin of a while loop
@@ -218,7 +292,7 @@ class Generator(object):
 
       self.ImmediateCodeObj = ImmediateCode()
 
-   def doIt(self):
+   def doIt(self, ArchitectureType):
       ReturnedTuple = self.transformObjectsIntoCode(self.Root, 0, 0, [])
 
       if ReturnedTuple[0]:
@@ -231,15 +305,36 @@ class Generator(object):
 
       print(self.ImmediateCodeObj.debugImmediateCode(self.ImmediateCodeObj.ImmCodeData))
 
+      self.ImmediateCode = self.ImmediateCodeObj.ImmCodeData
+
       OptimizerObj = Optimizer()
-      OptimizerObj.ImmediateInstructions = self.ImmediateCodeObj.ImmCodeData
+      OptimizerObj.ImmediateInstructions = self.ImmediateCode
       OptimizerObj.Variables = self.ImmediateCodeObj.Variables
 
       OptimizerObj.doOptimization()
 
-      print("\n\n")
 
-      print(self.ImmediateCodeObj.debugImmediateCode(OptimizerObj.ImmediateInstructions))
+      self.ImmediateCodeOptimized = OptimizerObj.ImmediateInstructions
+      
+      print("\n\n")
+      
+      print(self.ImmediateCodeObj.debugImmediateCode(self.ImmediateCodeOptimized))
+
+      if   ArchitectureType == Generator.EnumArchitetureType.PARALLEL:
+         self.ArchOutput.ImmediateCodeOptimized = self.ImmediateCodeOptimized
+         
+         (CalleeSuccess, CalleeMessage) = self.ArchOutput.generateParallelDesign()
+
+         if not CalleeSuccess:
+            print("Error: " + CalleeMessage)
+
+
+      elif ArchitectureType == Generator.EnumArchitetureType.SERIAL:
+         pass
+      else:
+         print("Internal error")
+         return False
+
 
    # "IntoVariable"    is the Id of the variable the result must be written into
 
@@ -569,5 +664,5 @@ class Generator(object):
 
       return (Found, VariableId, VariableInfo)
 
-Gen = Generator()
-Gen.doIt()
+Main = CToFpga()
+Main.go()

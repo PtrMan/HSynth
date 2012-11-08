@@ -1,4 +1,19 @@
 class ImmediateInstruction(object):
+   class EnumType:
+      LABEL = 0
+      GOTOLABEL = 1
+      ASSIGNCONST = 2
+      SUB = 3
+      DIV = 4
+      MOV = 5
+      ADD = 6
+      MUL = 7
+      SHIFTR = 8
+      SHIFTL = 9
+      INC = 10
+      DEC = 11
+      IF  = 12
+
    # type:
    #   0   label
    #       LabelId   the id of the label
