@@ -7,7 +7,7 @@ class DAG(object):
       # NOTE< can'T use pointers in the native code for this >
       self.Content = []
 
-   def addOperation(self, OperationType, NodeA, NodeB):
+   def addOperation(self, OperationType, NodeA, NodeB = None):
       # search for the Operation with the Same Properties
 
       i = 0
@@ -30,19 +30,23 @@ class DAG(object):
 
       return i
 
-   def addVariable(self, VarId):
+   # Check : when set this method checks if the Variable was allready Defined/Used 
+   def addVariable(self, VarId, Check = True):
       # search for the Operation with the Same Properties
 
       i = 0
 
-      while i < len(self.Content):
-         if (self.Content[i].OperationType == DAGElement.EnumOperationType.VAR) and \
-            (self.Content[i].VarId == VarId):
+      if Check:
+         while i < len(self.Content):
+          if (self.Content[i].OperationType == DAGElement.EnumOperationType.VAR) and \
+               (self.Content[i].VarId == VarId):
+   
+               # ...
+               return i
 
-            # ...
-            return i
-
-         i += 1
+            i += 1
+      else:
+         i = len(sel.Content)
 
       NewElement = DAGElement(DAGElement.EnumOperationType.VAR)
       NewElement.VarId = VarId

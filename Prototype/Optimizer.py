@@ -18,7 +18,7 @@ class Optimizer(object):
 
    # NOTE< self.ImmediateInstructions must be setted >
    # NOTE< self.Variables must be setted >
-   def doOptimization(self):
+   def doOptimization(self, TransformAddSubToIncDec):
       #self._analyseVariables()
 
       # now we check if a variable is a constant (means if it isn't changed)
@@ -40,12 +40,13 @@ class Optimizer(object):
       # we transfrom all multiplications with 2 or some constant to equivalent faster code
       self._optimizeMultiplications()
 
-      # transform all additions with 1 to inc operations
-      # this is needed for the next step
-      self._transfromAddition()
+      if TransformAddSubToIncDec:
+         # transform all additions with 1 to inc operations
+         # this is needed for the next step
+         self._transfromAddition()
 
-      # this fuses additions and inc's
-      self._fuseAdditionAndIncrement()
+         # this fuses additions and inc's
+         self._fuseAdditionAndIncrement()
 
       # this tries to optimize (conditional) jump to jump situations
       CalleeSuccess = self._optimizeJumpToJump()

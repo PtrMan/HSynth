@@ -64,14 +64,98 @@ class CToFpga(object):
       Gen = Generator()
       Gen.doIt(ArchitectureType)
 
+from Dag import *
+
 class Architecture(object):
    def __init__(self):
       self.ImmediateCodeOptimized = []
+      self.VariablesOptimized     = []
 
    # returns a (Success boolean, string error message)
    def generateParallelDesign(self):
       if self._notParallelisizableInstructions():
          return (False, "Immediate Instructions contain a not parallelisizable Instruction")
+
+      # this is a array with the state if the variable was used in this DAG of this Block
+      VariableUsedInDag = [False] * len(self.VariablesOptimized)
+      # the Index in the Dag content where the variables was defined
+      VariableIndexInDag = [0] * len(self.VariablesOptimized)
+
+      BlockDag = DAG()
+
+      # we translate with this the Code of the Block into one Dag where we can do some optimisations
+      # and we can with the help of the optimized Dag schedule the Dataflow
+      
+      for Instruction in self.ImmediateCodeOptimized:
+         if   Instruction.Type == ImmediateInstruction.EnumType.ASSIGNCONST:
+            return (False, "TODO!")
+
+         elif (Instruction.Type == ImmediateInstruction.EnumType.ADD) or \
+              (Instruction.Type == ImmediateInstruction.EnumType.SUB) or \
+              (Instruction.Type == ImmediateInstruction.EnumType.MUL) or \
+              (Instruction.Type == ImmediateInstruction.EnumType.DIV):
+            
+            # ...
+            DagIndexA = 0
+            DagIndexB = 0
+
+            if not VariableUsedInDag[ Instruction.A ]:
+               DagIndexA = BlockDag.addVariable(Instruction.A, False)
+               VariableUsedInDag[ Instruction.A ] = True
+               VariableIndexInDag[ Instruction.A ] = DagIndexA
+            else:
+               DagIndexA = VariableIndexInDag[ Instruction.A ]
+
+            if not VariableUsedInDag[ Instruction.B ]:
+               DagIndexB = BlockDag.addVariable(Instruction.B, False)
+               VariableUsedInDag[ Instruction.B ] = True
+               VariableIndexInDag[ Instruction.B ] = DagIndexB
+            else:
+               DagIndexB = VariableIndexInDag[ Instruction.B ]
+
+            DagOperationType = 0
+
+            if   Instruction.Type == ImmediateInstruction.EnumType.ADD:
+               DagOperationType = DAGElement.EnumOperationType.ADD
+            elif Instruction.Type == ImmediateInstruction.EnumType.SUB:
+               DagOperationType = DAGElement.EnumOperationType.SUB
+            elif Instruction.Type == ImmediateInstruction.EnumType.MUL:
+               DagOperationType = DAGElement.EnumOperationType.MUL
+            elif Instruction.Type == ImmediateInstruction.EnumType.DIV:
+               DagOperationType = DAGElement.EnumOperationType.DIV
+            else:
+               return (False, "internal Error!")
+
+            DagIndexInstruction = BlockDag.addOperation(DagOperationType, DagIndexA, DagIndexB)
+
+            VariableUsedInDag[ Instruction.Destination ] = True
+            VariableIndexInDag[ Instruction.Destination ] = DagIndexInstruction
+
+         elif Instruction.Type == ImmediateInstruction.EnumType.MOV:
+            if not VariableUsedInDag[ Instruction.Source ]:
+               return (False, "Internal Error #0x1337")
+
+            SourceIndexInDag = VariableIndexInDag[ Instruction.Source ]
+
+            DagIndexInstruction = BlockDag.addOperation(DAGElement.EnumOperationType.MOV, SourceIndexInDag)
+
+            VariableUsedInDag[ Instruction.Destination ] = True
+            VariableIndexInDag[ Instruction.Destination ] = DagIndexInstruction
+
+         elif Instruction.Type == ImmediateInstruction.EnumType.SHIFTR:
+
+            return (False, "TODO!")
+         elif Instruction.Type == ImmediateInstruction.EnumType.SHIFTL:
+
+            return (False, "TODO!")
+            
+         elif Instruction.Type == ImmediateInstruction.EnumType.INC:
+            return (False, "Internal Error!")
+         elif Instruction.Type == ImmediateInstruction.EnumType.DEC:
+            return (False, "Internal Error!")
+         else:
+            return (False, "Internal Error!")
+
 
       # TODOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
@@ -311,7 +395,14 @@ class Generator(object):
       OptimizerObj.ImmediateInstructions = self.ImmediateCode
       OptimizerObj.Variables = self.ImmediateCodeObj.Variables
 
-      OptimizerObj.doOptimization()
+
+      OptimizeAddSubToIncDec = True
+
+      if ArchitectureType == Generator.EnumArchitetureType.PARALLEL:
+         OptimizeAddSubToIncDec = False
+
+
+      OptimizerObj.doOptimization(OptimizeAddSubToIncDec)
 
 
       self.ImmediateCodeOptimized = OptimizerObj.ImmediateInstructions

@@ -5,6 +5,7 @@ class DAGElement(object):
       MUL = 3
       DIV = 4
       VAR = 5
+      MOV = 6 # moves from NodeA to VarId (VarId is the destination variable)
 
    def __init__(self, OperationType):
       self.NodeA = None
