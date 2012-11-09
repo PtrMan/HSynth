@@ -55,6 +55,14 @@ class DAG(object):
 
       return i
 
+   def debug(self):
+      Return = ""
+
+      for Element in self.Content:
+         Return += Element.debug()
+
+      return Return
+
 """
 d = DAG()
 

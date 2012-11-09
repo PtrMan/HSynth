@@ -31,12 +31,14 @@ class FlowChart(object):
 
          i = 0
          while i < len(Timing):
-            if Dag[i].OperationType == DagElement.EnumOperationType.VAR:
+            # TODO< add mov path ? >
+
+            if Dag.Content[i].OperationType == DAGElement.EnumOperationType.VAR:
                i += 1
                continue
 
-            NodeA = Dag[i].NodeA
-            NodeB = Dag[i].NodeB
+            NodeA = Dag.Content[i].NodeA
+            NodeB = Dag.Content[i].NodeB
 
             OldTiming = Timing[i]
 

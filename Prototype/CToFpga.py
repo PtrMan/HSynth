@@ -66,10 +66,13 @@ class CToFpga(object):
 
 from Dag import *
 
+from FlowChart import *
+
 class Architecture(object):
    def __init__(self):
       self.ImmediateCodeOptimized = []
       self.VariablesOptimized     = []
+      self.FlowChartObj = FlowChart()
 
    # returns a (Success boolean, string error message)
    def generateParallelDesign(self):
@@ -156,6 +159,18 @@ class Architecture(object):
          else:
             return (False, "Internal Error!")
 
+
+      print("Dag 1:")
+
+      DebugString = BlockDag.debug()
+
+      print(DebugString)
+
+      # calculate the Flow chart of the Dag
+      FlowChartList = self.FlowChartObj.calcFlowChart(BlockDag)
+      
+      print("Flow chart")
+      print(FlowChartList)
 
       # TODOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO
 
