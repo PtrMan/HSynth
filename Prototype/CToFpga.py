@@ -148,7 +148,7 @@ class Architecture(object):
          elif Instruction.Type == ImmediateInstruction.EnumType.SHIFTL:
 
             return (False, "TODO!")
-            
+
          elif Instruction.Type == ImmediateInstruction.EnumType.INC:
             return (False, "Internal Error!")
          elif Instruction.Type == ImmediateInstruction.EnumType.DEC:
@@ -184,7 +184,7 @@ class Generator(object):
       self.ImmediateCodeOptimized = [] # optimized immediate code
       self.Variables              = []
 
-      self.ArchOutput = ArchitectureType()
+      self.ArchOutput = Architecture()
 
       # type:
 
@@ -291,6 +291,10 @@ class Generator(object):
       # algorithm for calculating of the sqrt
 
       # (examples/calc my sqrt)
+      # (is a serial code)
+      # works
+
+      """
 
       Type1 = Datatype(Datatype.EnumBasetype.UNSIGNED)
       Type1.Bits = 32
@@ -330,6 +334,8 @@ class Generator(object):
             }
          ]}
       ]
+
+      """
 
       # cordic algorithm
 
@@ -374,6 +380,29 @@ class Generator(object):
       ]
       """
 
+      # Testcode for the parallelistation code
+
+      Type1 = Datatype(Datatype.EnumBasetype.UNSIGNED)
+      Type1.Bits = 32
+
+      Type2 = Datatype(Datatype.EnumBasetype.UNSIGNED)
+      Type2.Bits = 32
+
+      Type3 = Datatype(Datatype.EnumBasetype.UNSIGNED)
+      Type3.Bits = 32
+
+      self.Root = [
+         {"type":"newVar2", "name":"A", "info":Type1},
+         {"type":"newVar2", "name":"B", "info":Type2},
+         {"type":"newVar2", "name":"C", "info":Type3},
+         
+         {"type":"assigment2", "left":{"type":"variable", "name":"A"}, "right":{
+            "type":"add", "left":{"type":"variable", "name":"A"}, "right":{"type":"add", "left":{"type":"variable", "name":"B"}, "right":{"type":"variable", "name":"C"}}
+         #}}
+         }}
+      ]
+
+
       self.ImmediateCodeObj = ImmediateCode()
 
    def doIt(self, ArchitectureType):
@@ -406,6 +435,7 @@ class Generator(object):
 
 
       self.ImmediateCodeOptimized = OptimizerObj.ImmediateInstructions
+      self.Variables              = OptimizerObj.Variables
       
       print("\n\n")
       
@@ -413,7 +443,8 @@ class Generator(object):
 
       if   ArchitectureType == Generator.EnumArchitetureType.PARALLEL:
          self.ArchOutput.ImmediateCodeOptimized = self.ImmediateCodeOptimized
-         
+         self.ArchOutput.VariablesOptimized     = self.Variables
+
          (CalleeSuccess, CalleeMessage) = self.ArchOutput.generateParallelDesign()
 
          if not CalleeSuccess:

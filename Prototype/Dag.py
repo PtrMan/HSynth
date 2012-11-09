@@ -38,15 +38,15 @@ class DAG(object):
 
       if Check:
          while i < len(self.Content):
-          if (self.Content[i].OperationType == DAGElement.EnumOperationType.VAR) and \
+            if (self.Content[i].OperationType == DAGElement.EnumOperationType.VAR) and \
                (self.Content[i].VarId == VarId):
-   
+
                # ...
                return i
 
             i += 1
       else:
-         i = len(sel.Content)
+         i = len(self.Content)
 
       NewElement = DAGElement(DAGElement.EnumOperationType.VAR)
       NewElement.VarId = VarId
