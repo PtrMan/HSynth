@@ -21,10 +21,9 @@ while(1)
 import argparse
 
 from ImmediateCode import *
-
 from Optimizer import *
-
 from Datatype import *
+from Architecture import *
 
 class CToFpga(object):
    def __init__(self):
@@ -63,7 +62,7 @@ class CToFpga(object):
 
       Gen = Generator()
       Gen.doIt(ArchitectureType)
-
+"""
 from Dag import *
 
 from FlowChart import *
@@ -187,7 +186,7 @@ class Architecture(object):
             # ...
             return True
 
-      return False
+      return False"""
 
 class Generator(object):
    class EnumArchitetureType:

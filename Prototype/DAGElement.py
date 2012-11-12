@@ -6,6 +6,7 @@ class DAGElement(object):
       DIV = 3
       VAR = 4
       MOV = 5 # moves from NodeA to VarId (VarId is the destination variable)
+      FLIPFLOP = 6 # a flipflop stage, is added to ease the creation of the logic
 
    StringsOperationType = ["ADD", "SUB", "MUL", "DIV", "VAR", "MOV"]
 
